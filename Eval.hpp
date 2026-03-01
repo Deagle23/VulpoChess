@@ -1,6 +1,7 @@
 #pragma once
 #define CHESS_NO_EXCEPTIONS
 #include "chess.hpp"
+#include <algorithm>
 
 using namespace chess;
 
@@ -20,6 +21,17 @@ const int PAWN_TABLE[64] = {
   5,   5,  10,  25,  25,  10,   5,   5,
  10,  10,  20,  30,  30,  20,  10,  10,
  50,  50,  50,  50,  50,  50,  50,  50,
+  0,   0,   0,   0,   0,   0,   0,   0
+};
+
+const int PAWN_ENDGAME_TABLE[64] = {
+  0,   0,   0,   0,   0,   0,   0,   0,
+-10, -10, -10, -10, -10, -10, -10, -10,
+  0,   0,   0,   0,   0,   0,   0,   0,
+ 10,  10,  10,  10,  10,  10,  10,  10, 
+ 20,  20,  20,  20,  20,  20,  20,  20, 
+ 30,  30,  30,  30,  30,  30,  30,  30, 
+ 50,  50,  50,  50,  50,  50,  50,  50, 
   0,   0,   0,   0,   0,   0,   0,   0
 };
 
@@ -92,7 +104,7 @@ const int KING_ENDGAME_TABLE[64] = {
 int evalSquarePSQT(int sq, PieceType type, double egweight) {
 
     switch (type) {
-        case PAWN:   return PAWN_TABLE[sq];
+        case PAWN:   return (int)((1.0 - egweight) * PAWN_TABLE[sq] + egweight * PAWN_ENDGAME_TABLE[sq]);
         case KNIGHT: return KNIGHT_TABLE[sq];
         case BISHOP: return BISHOP_TABLE[sq];
         case ROOK:   return ROOK_TABLE[sq];
@@ -159,10 +171,10 @@ int evalBoard(const chess::Board& board) {
     pMaterial += (board.pieces(PieceType::ROOK, Color::WHITE).count() - board.pieces(PieceType::ROOK, Color::BLACK).count()) * ROOK_VALUE;
     pMaterial += (board.pieces(PieceType::QUEEN, Color::WHITE).count() - board.pieces(PieceType::QUEEN, Color::BLACK).count()) * QUEEN_VALUE;
 
-    //Increases to 1 as the game goes on
-    double endgameWeight = ((float) 8000 - (float) countMaterial(board)) / 8000;
-    if (endgameWeight < 0.0) endgameWeight = 0.0;
-    if (endgameWeight > 1.0) endgameWeight = 1.0;
+    double phase = (8000.0 - countMaterial(board)) / 7000.0;
+    phase = std::clamp(phase, 0.0, 1.0);
+
+    double endgameWeight = phase * phase;
     
 
     score += pMaterial;
