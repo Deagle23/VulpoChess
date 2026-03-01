@@ -40,12 +40,50 @@ void scoreMoves(Board& board, Movelist& moves, int scores[256], bool root=false,
     }
 }
 
+int qSearch(Board& board, int alpha=-INF, int beta=INF) {
+    //A stand pat
+    int bestScore = evalBoard(board);
+
+    if (bestScore >= beta) {
+        return beta;
+    }
+    if (bestScore > alpha) {
+        alpha = bestScore;
+    }
+
+    Movelist captureMoves;
+
+    movegen::legalmoves(captureMoves, board);
+    
+    int score = -INF;
+
+    for (auto move : captureMoves) {
+        if (!board.isCapture(move)) {continue;}
+        board.makeMove(move);
+        score = -qSearch(board, -beta, -alpha);
+        board.unmakeMove(move);
+
+        if (score >= beta) {
+            return beta;
+        }
+        if (score > bestScore) {
+            bestScore = score;
+        }
+        if (score > alpha) {
+            alpha = score;
+        }
+        
+    }
+    return alpha;
+
+}
 
 
-int negamax(Board& board, int depth, int alpha, int beta) {
+
+int negamax(Board& board, int depth, int alpha=-INF, int beta=INF) {
 
     if (depth == 0) {
-        return evalBoard(board);
+        return qSearch(board);
     }
     
     Movelist moves;
