@@ -149,6 +149,7 @@ Move findBestMove(Board& board, int timeAllocated=10'000, bool printEval=false, 
 
             if (ms >= timeAllocated && depth > 1) {
                 over = true;
+                break;
             }
         }
         depth += 1;
