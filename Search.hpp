@@ -14,7 +14,12 @@
 using namespace chess;
 
 constexpr int INF = 1'000'000'000;
-constexpr int ROOT_BONUS = 2'000'0000;
+constexpr int ROOT_BONUS = 100'000;
+constexpr int CONTEMPT = 20;
+constexpr int KILLER1_BONUS = 90'000;
+constexpr int KILLER2_BONUS = 80'000;
+
+Move killers[30][2] {};
 
 int SEE(Board& board, Move move) {
     int victim = getPieceValue(board.at(move.to()).type());
@@ -22,18 +27,24 @@ int SEE(Board& board, Move move) {
     return victim * 10 - attacker;
 }
 
-int scoreMove(Board& board, Move move) {
+int scoreMove(Board& board, Move move, int ply=0) {
     //SEE (REPLACE SOON)
     int score = 0;
     if (board.isCapture(move)) {
         score = SEE(board, move);
     }
+    if (ply != 0) {
+        if (killers[ply][0] == move)
+            score += KILLER1_BONUS;
+        if (killers[ply][1] == move)
+            score += KILLER2_BONUS;
+    }
     return score;
 }
 
-void scoreMoves(Board& board, Movelist& moves, int scores[256], bool root=false, Move bestMove=chess::Move::NULL_MOVE) {
+void scoreMoves(Board& board, Movelist& moves, int scores[256], bool root=false, int ply=0,Move bestMove=chess::Move::NULL_MOVE) {
     for (int i=0;i<moves.size();i++) {
-        scores[i] = scoreMove(board, moves.at(i));
+        scores[i] = scoreMove(board, moves.at(i), ply);
         if (root && moves.at(i) == bestMove) {
             scores[i] += ROOT_BONUS;
         }
@@ -54,6 +65,18 @@ int qSearch(Board& board, int alpha=-INF, int beta=INF) {
     Movelist captureMoves;
 
     movegen::legalmoves(captureMoves, board);
+
+    if (captureMoves.empty()) {
+        if (board.inCheck()) {
+            return -INF + 1;
+        } else {
+            return bestScore;
+        }
+    }
+    else if (board.halfMoveClock() >= 100 || board.isHalfMoveDraw() || board.isInsufficientMaterial() || board.isRepetition(1)) {
+        //Prefers to not draw
+        return (board.sideToMove() == Color::WHITE ? -CONTEMPT : CONTEMPT);
+    }
     
     int score = -INF;
 
@@ -80,23 +103,28 @@ int qSearch(Board& board, int alpha=-INF, int beta=INF) {
 
 
 
-int negamax(Board& board, int depth, int alpha=-INF, int beta=INF) {
+int negamax(Board& board, int depth, int alpha=-INF, int beta=INF, int ply=1) {
 
     if (depth == 0) {
-        return qSearch(board);
+        return qSearch(board, alpha, beta);
     }
     
     Movelist moves;
     movegen::legalmoves(moves, board);
     int scores[256];
-    scoreMoves(board, moves, scores);
+    scoreMoves(board, moves, scores, false, ply - 1);
 
     if (moves.empty()) {
         if (board.inCheck()) {
             return -INF + 1;
         } else {
-            return 0;
+            //Make it doesn't like draws
+            return (board.sideToMove() == Color::WHITE ? -CONTEMPT : CONTEMPT);
         }
+    }
+
+    else if (board.halfMoveClock() >= 100 || board.isHalfMoveDraw() || board.isInsufficientMaterial() || board.isRepetition(1)) {
+        return (board.sideToMove() == Color::WHITE ? -CONTEMPT : CONTEMPT);
     }
 
     for (int i=0;i<moves.size();i++) {
@@ -117,6 +145,10 @@ int negamax(Board& board, int depth, int alpha=-INF, int beta=INF) {
         board.unmakeMove(moves[i]);
 
         if (score >= beta) {
+            if (!board.isCapture(moves[i])) {
+                killers[ply - 1][1] = killers[ply - 1][0];
+                killers[ply - 1][0] = moves[i];
+            }
             return beta;
         }
         if (score > alpha) {
@@ -153,7 +185,7 @@ Move findBestMove(Board& board, int timeAllocated=10'000, bool printEval=false, 
         //Order moves
         int scores[256];
 
-        (depth > 1) ? scoreMoves(board, moves, scores, true, bestMove) : scoreMoves(board, moves, scores);
+        (depth > 1) ? scoreMoves(board, moves, scores, true, 0, bestMove) : scoreMoves(board, moves, scores);
 
         for (int i=0;i<moves.size();i++) {
             int bestIndex = i;
@@ -173,7 +205,7 @@ Move findBestMove(Board& board, int timeAllocated=10'000, bool printEval=false, 
             Move move = moves[i];
 
             board.makeMove(move);
-            int score = -negamax(board, depth - 1, -INF, INF);
+            int score = -negamax(board, depth - 1, -INF, INF, 1);
             board.unmakeMove(move);
 
             now = Clock::now();

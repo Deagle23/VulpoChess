@@ -1,5 +1,3 @@
 Add:
 
-- Add TT, killers
-- Iterative deepening
-- Add history heuristic
+- Add TT

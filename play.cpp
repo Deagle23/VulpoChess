@@ -80,7 +80,7 @@ int main() {
 
             auto start = Clock::now();
 
-            Move engineMove = findBestMove(board, 10'000, true);
+            Move engineMove = findBestMove(board, 100, true);
 
             auto end = Clock::now();
 

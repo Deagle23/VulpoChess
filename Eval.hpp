@@ -10,6 +10,8 @@ const int BISHOP_VALUE = 350;
 const int ROOK_VALUE = 500;
 const int QUEEN_VALUE = 900;
 
+constexpr int TEMPO_BONUS = 50;
+
 const int PAWN_TABLE[64] = {
   0,   0,   0,   0,   0,   0,   0,   0,
   5,  10,  10, -20, -20,  10,  10,   5,
@@ -177,6 +179,10 @@ int evalBoard(const chess::Board& board) {
     int mobility = countControlledSquares(board, Color::WHITE) - countControlledSquares(board, Color::BLACK);
 
     score += mobility;
+
+    //Tempo
+    score += TEMPO_BONUS;
+
 
     return board.sideToMove() == Color::WHITE ? score : -score;
 }
