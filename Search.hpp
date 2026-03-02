@@ -20,6 +20,7 @@ constexpr int KILLER1_BONUS = 90'000;
 constexpr int KILLER2_BONUS = 80'000;
 
 Move killers[30][2] {};
+int history[2][64][64]
 
 int SEE(Board& board, Move move) {
     int victim = getPieceValue(board.at(move.to()).type());

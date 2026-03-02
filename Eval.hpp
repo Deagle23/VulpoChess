@@ -11,7 +11,17 @@ const int BISHOP_VALUE = 350;
 const int ROOK_VALUE = 500;
 const int QUEEN_VALUE = 900;
 
+const float PAWN_MB[2] {0.5, 1.2};
+const float KNIGHT_MB[2] {1.5, 2};
+const float BISHOP_MB[2] {1.3, 1.5};
+const float ROOK_MB[2] {1.5, 2};
+const float QUEEN_MB[2] {1.2, 3};
+const float KING_MB[2] {-0.5, 2};
+
 constexpr int TEMPO_BONUS = 50;
+constexpr int CONTEMPT = 20;
+
+constexpr int MATE_SCORE = 999999999;
 
 const int PAWN_TABLE[64] = {
   0,   0,   0,   0,   0,   0,   0,   0,
@@ -133,8 +143,20 @@ int returnPSQT(const Board& board, PieceType type, double egweight) {
     return score;
 }
 
+int calculateMobility(const Board& board, Color color, double eg) {
+    double score = 0;
+    score += board.pieces(PieceType::PAWN, color).count() * PAWN_MB[0] * (1 - eg) + board.pieces(PieceType::PAWN, color).count() * PAWN_MB[1] * (eg);
+    score += board.pieces(PieceType::KNIGHT, color).count() * KNIGHT_MB[0] * (1 - eg) + board.pieces(PieceType::KNIGHT, color).count() * KNIGHT_MB[1] * (eg);
+    score += board.pieces(PieceType::BISHOP, color).count() * BISHOP_MB[0] * (1 - eg) + board.pieces(PieceType::BISHOP, color).count() * BISHOP_MB[1] * (eg);
+    score += board.pieces(PieceType::ROOK, color).count() * ROOK_MB[0] * (1 - eg) + board.pieces(PieceType::ROOK, color).count() * ROOK_MB[1] * (eg);
+    score += board.pieces(PieceType::QUEEN, color).count() * QUEEN_MB[0] * (1 - eg) + board.pieces(PieceType::QUEEN, color).count() * QUEEN_MB[1] * (eg);
+    score += board.pieces(PieceType::KING, color).count() * KING_MB[0] * (1 - eg) + board.pieces(PieceType::KING, color).count() * KING_MB[1] * (eg);
+
+    return score;
+}
+
 int countControlledSquares(const Board& board, Color color) {
-    return board.us(Color::WHITE).count();
+    return board.us(color).count();
 }
 
 
@@ -160,6 +182,12 @@ int getPieceValue(PieceType piece) {
 }
 
 int evalBoard(const chess::Board& board) {
+    GameResult result = board.isGameOver().second;
+
+    if (result != GameResult::NONE) {
+        if (result == GameResult::DRAW) {return -CONTEMPT;}
+        return (result == GameResult::WIN) ? MATE_SCORE : -MATE_SCORE;
+    }   
 
     int score = 0;
 
@@ -188,7 +216,7 @@ int evalBoard(const chess::Board& board) {
     score += returnPSQT(board, PieceType::QUEEN, endgameWeight);
     score += returnPSQT(board, PieceType::KING, endgameWeight);
 
-    int mobility = countControlledSquares(board, Color::WHITE) - countControlledSquares(board, Color::BLACK);
+    int mobility = calculateMobility(board, Color::WHITE, endgameWeight) - calculateMobility(board, Color::BLACK, endgameWeight);
 
     score += mobility;
 

@@ -80,7 +80,7 @@ int main() {
     std::vector<Move> game;
 
     while (x == GameResult::NONE) {
-        Move move = findBestMove(board, 100);
+        Move move = findBestMove(board, 100, true);
         std::cout << uci::moveToSan(board, move) << "\n";
         board.makeMove(move);
         game.emplace_back(move);
