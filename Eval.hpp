@@ -144,6 +144,7 @@ int returnPSQT(const Board& board, PieceType type, double egweight) {
 }
 
 int movesForType(Board& board, PieceType type, Color color, Movelist moves) {
+    //Yes manual bc i couldn't for the life of me scroll through disservin's docs
 
     board.makeNullMove();
 
@@ -252,7 +253,7 @@ int evalBoard(chess::Board& board) {
 
     score += mobility;
 
-    //Tempo
+    //Tempo stuff idk why this is like this in the CP wiki
     score += TEMPO_BONUS;
 
 

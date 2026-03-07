@@ -17,10 +17,10 @@ using namespace chess;
 constexpr int INF = 1'000'000'000;
 constexpr int ROOT_BONUS = 100'000;
 constexpr int TT_BONUS = 95'000;
-constexpr int KILLER1_BONUS = 90'000;
-constexpr int KILLER2_BONUS = 80'000;
-constexpr int MAX_HISTORY = 70'000;
-constexpr int HISTORY_BONUS = 10'000;
+constexpr int KILLER1_BONUS = 50'000;
+constexpr int KILLER2_BONUS = 40'000;
+constexpr int MAX_HISTORY = 30'000;
+constexpr int HISTORY_BONUS = 5'000;
 
 Move killers[64][2] {};
 int history[2][64][64] {};

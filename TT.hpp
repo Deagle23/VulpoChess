@@ -34,7 +34,7 @@ struct TT {
         size_t bytes = mb * 1024ULL * 1024ULL;
         size_t count = bytes / sizeof(TTEntry);
 
-        // round down to nearest power of two
+        //Round down to nearest power of two
         count = 1ULL << (63 - __builtin_clzll(count));
 
         table.resize(count);
