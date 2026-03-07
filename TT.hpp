@@ -49,7 +49,8 @@ struct TT {
     }
 
     TTEntry* probe(uint64_t key) {
-
+        
+        //Basically rough modulo by the size of the TT
         TTEntry& entry = table[key & mask];
 
         if (entry.key == key)
@@ -65,6 +66,8 @@ struct TT {
                Move bestMove)
     {
         TTEntry& entry = table[key & mask];
+
+        if (bestMove == Move::NULL_MOVE) {return;}
 
         // replace if empty or deeper search
         if (entry.key != key || depth >= entry.depth) {

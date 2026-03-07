@@ -143,14 +143,45 @@ int returnPSQT(const Board& board, PieceType type, double egweight) {
     return score;
 }
 
-int calculateMobility(const Board& board, Color color, double eg) {
+int movesForType(Board& board, PieceType type, Color color, Movelist moves) {
+
+    board.makeNullMove();
+
+    int count = 0;
+    for (const auto& move : moves)
+        if (board.at(move.from()).type() == type)
+            count++;
+
+    board.unmakeNullMove();
+    return count;
+}
+
+
+inline int calculatePieceMobility(Board& board, PieceType type, Color color, double eg, Movelist moves) {
+    switch (type) {
+        case PAWN: return movesForType(board, type, color, moves) * (1-eg) * PAWN_MB[0] + movesForType(board, type, color, moves) * (eg) * PAWN_MB[1];
+        case KNIGHT: return movesForType(board, type, color, moves) * (1-eg) * KNIGHT_MB[0] + movesForType(board, type, color, moves) * (eg) * KNIGHT_MB[1];
+        case BISHOP: return movesForType(board, type, color, moves) * (1-eg) * BISHOP_MB[0] + movesForType(board, type, color, moves) * (eg) * BISHOP_MB[1];
+        case ROOK: return movesForType(board, type, color, moves) * (1-eg) * ROOK_MB[0] + movesForType(board, type, color, moves) * (eg) * ROOK_MB[1];
+        case QUEEN: return movesForType(board, type, color, moves) * (1-eg) * QUEEN_MB[0] + movesForType(board, type, color, moves) * (eg) * QUEEN_MB[1];
+        case KING: return movesForType(board, type, color, moves) * (1-eg) * KING_MB[0] + movesForType(board, type, color, moves) * (eg) * KING_MB[1];
+        default: return 0;
+    }
+}
+
+int calculateMobility(Board& board, Color color, double eg) {
     double score = 0;
-    score += board.pieces(PieceType::PAWN, color).count() * PAWN_MB[0] * (1 - eg) + board.pieces(PieceType::PAWN, color).count() * PAWN_MB[1] * (eg);
-    score += board.pieces(PieceType::KNIGHT, color).count() * KNIGHT_MB[0] * (1 - eg) + board.pieces(PieceType::KNIGHT, color).count() * KNIGHT_MB[1] * (eg);
-    score += board.pieces(PieceType::BISHOP, color).count() * BISHOP_MB[0] * (1 - eg) + board.pieces(PieceType::BISHOP, color).count() * BISHOP_MB[1] * (eg);
-    score += board.pieces(PieceType::ROOK, color).count() * ROOK_MB[0] * (1 - eg) + board.pieces(PieceType::ROOK, color).count() * ROOK_MB[1] * (eg);
-    score += board.pieces(PieceType::QUEEN, color).count() * QUEEN_MB[0] * (1 - eg) + board.pieces(PieceType::QUEEN, color).count() * QUEEN_MB[1] * (eg);
-    score += board.pieces(PieceType::KING, color).count() * KING_MB[0] * (1 - eg) + board.pieces(PieceType::KING, color).count() * KING_MB[1] * (eg);
+
+    Movelist moves;
+    movegen::legalmoves(moves, board);
+
+    score += calculatePieceMobility(board, PieceType::PAWN, color, eg, moves);
+    score += calculatePieceMobility(board, PieceType::KNIGHT, color, eg, moves);
+    score += calculatePieceMobility(board, PieceType::BISHOP, color, eg, moves);
+    score += calculatePieceMobility(board, PieceType::ROOK, color, eg, moves);
+    score += calculatePieceMobility(board, PieceType::QUEEN, color, eg, moves);
+    score += calculatePieceMobility(board, PieceType::KING, color, eg, moves);
+
 
     return score;
 }
@@ -181,12 +212,13 @@ int getPieceValue(PieceType piece) {
     }
 }
 
-int evalBoard(const chess::Board& board) {
+int evalBoard(chess::Board& board) {
     GameResult result = board.isGameOver().second;
 
     if (result != GameResult::NONE) {
         if (result == GameResult::DRAW) {return -CONTEMPT;}
-        return (result == GameResult::WIN) ? MATE_SCORE : -MATE_SCORE;
+        //Lost
+        else return -MATE_SCORE;
     }   
 
     int score = 0;
@@ -205,7 +237,7 @@ int evalBoard(const chess::Board& board) {
     double endgameWeight = phase * phase;
     
 
-    score += pMaterial;
+    score += pMaterial * (1.0 + endgameWeight * 0.5);
 
     //PSQT stuff
 
