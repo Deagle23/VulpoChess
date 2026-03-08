@@ -5,6 +5,7 @@
 #include "chess.hpp"
 #include <algorithm>
 #include <iostream>
+#include <bit>
 
 using namespace chess;
 
@@ -123,7 +124,7 @@ const int STACKED_PENALTY = 30;
 uint8_t getFile(uint64_t bb, int f) {
     uint8_t file = 0;
     for (int i=0;i<8;i++) {
-        file += (bb >> (f + 8 * i)) & 0x0000000000000001;
+        file += ((bb >> (f + 8 * i)) & 1) * pow(2, i);
     }
     return file;
 }
@@ -136,28 +137,44 @@ void print(T p, int missLines=1) {
     }
 }
 
-int evalStackedPawns(const Board& board, uint64_t whitePawns, uint64_t blackPawns) {
-    int score = 0;
-    //Loop through every file
-    for (int i=0;i<8;i++) {
-        uint64_t currentBitmask = (fileBitmask << (7 - i));
-        for (int c=0;c<2;c++) {
-            uint8_t pawns = getFile(currentBitmask, i);
-            //No pawns here guys...again...
-            if (pawns == 0) {continue;}
-            if (c == 1) {pawns = pawns ^ 56;}
-        }
-    }
-    return 0;
-}
-
 void printBitboard(uint64_t a) {
     for (int i=0;i<8;i++) {
         for (int j=0;j<8;j++)
-            std::cout << ((a >> i) & 0x0000000000000001);
+            std::cout << ((a >> (8 * i + j)) & 1);
         std::cout << '\n';
     }
     std::cout << "\n\n";
+}
+
+void printBitfile(uint8_t a) {
+    for (int j=0;j<8;j++)
+        std::cout << ((a >> j) & 1);
+    std::cout << "\n\n";
+}
+
+int countBits(uint8_t& file) {
+    int count = 0;
+    for (int i=0;i<8;i++) {
+        if ((file >> i) & 1) {count++;}
+    }
+    return count;
+}
+
+int evalStackedPawns(const Board& board, uint64_t& whitePawns, uint64_t& blackPawns) {
+    int score = 0;
+    //Loop through every file
+    for (int i=0;i<8;i++) {
+        for (int c=0;c<2;c++) {
+            int count = 0;
+            uint8_t pawns = getFile((c == 0) ? whitePawns : blackPawns, i);
+            //No pawns here guys...again...
+            if (pawns == 0) {continue;}
+            //Note: we don't need to flip the board for black, as we're just counting the amount of pawns in a file
+            count = countBits(pawns);
+            score += (c == 0) ? count : -count;
+        }
+    }
+    return score * -STACKED_PENALTY;
 }
 
 int evalPassedPawns(const Board& board, uint64_t whitePawns, uint64_t blackPawns) {
@@ -174,15 +191,15 @@ int evalPassedPawns(const Board& board, uint64_t whitePawns, uint64_t blackPawns
         }
         //Get if the pawns in this file are passed (i got sidetracked and watched an entire movie lol)
         for (int a=0;a<2;a++) {
-            uint8_t pawns = (a == 0) ? getFile(whitePawns, i) : getFile(blackPawns, i) ^ 56;
+            uint8_t pawns = (a == 0) ? getFile(whitePawns, i) : std::rotl(getFile(blackPawns, i), 4);
             //Find highest pawn (bitshift right means to get closer to a8, idk why, it just does)
             int rank = 0;
+            //No pawns in this rank to see guys, must've been the wind
+            if (pawns == 0) {continue;}
             while (((pawns & 1) != 1) && (pawns != 0)) {
                 pawns = pawns >> 1;
                 rank += 1;
             }
-            //No pawns in this rank to see guys, must've been the wind
-            if (pawns == 0) {continue;}
             uint64_t frontMask = (0xFFFFFFFFFFFFFFFF << (rank * 8)) | neighbouringBitmask | currentBitmask;
             //If black then flip
             switch (a) {
@@ -204,6 +221,8 @@ void evalPawns(Board &board) {
     uint64_t blackPawns = board.pieces(PieceType::PAWN, Color::BLACK).getBits();
     //Passed pawn stuff
     pawnCache = evalPassedPawns(board, whitePawns, blackPawns);
+    //Stacked pawn stuff
+    pawnCache += evalStackedPawns(board, whitePawns, blackPawns);
 
 }
 
