@@ -118,6 +118,7 @@ const int KING_ENDGAME_TABLE[64] = {
 int pawnCache = 0;
 const uint64_t fileBitmask = 0x0101010101010101;
 const int PASSED_PAWN_BONUS = 50;
+const int STACKED_PENALTY = 30;
 
 uint8_t getFile(uint64_t bb, int f) {
     uint8_t file = 0;
@@ -135,11 +136,33 @@ void print(T p, int missLines=1) {
     }
 }
 
-int evalPassedPawns(const Board& board) {
+int evalStackedPawns(const Board& board, uint64_t whitePawns, uint64_t blackPawns) {
+    int score = 0;
+    //Loop through every file
+    for (int i=0;i<8;i++) {
+        uint64_t currentBitmask = (fileBitmask << (7 - i));
+        for (int c=0;c<2;c++) {
+            uint8_t pawns = getFile(currentBitmask, i);
+            //No pawns here guys...again...
+            if (pawns == 0) {continue;}
+            if (c == 1) {pawns = pawns ^ 56;}
+        }
+    }
+    return 0;
+}
+
+void printBitboard(uint64_t a) {
+    for (int i=0;i<8;i++) {
+        for (int j=0;j<8;j++)
+            std::cout << ((a >> i) & 0x0000000000000001);
+        std::cout << '\n';
+    }
+    std::cout << "\n\n";
+}
+
+int evalPassedPawns(const Board& board, uint64_t whitePawns, uint64_t blackPawns) {
     //Loop through every file
     int score = 0;
-    uint64_t whitePawns = board.pieces(PieceType::PAWN, Color::WHITE).getBits();
-    uint64_t blackPawns = board.pieces(PieceType::PAWN, Color::BLACK).getBits();
     for (int i=0;i<8;i++) {
         uint64_t currentBitmask = (fileBitmask << (7 - i));
         uint64_t neighbouringBitmask = 0;
@@ -152,15 +175,15 @@ int evalPassedPawns(const Board& board) {
         //Get if the pawns in this file are passed (i got sidetracked and watched an entire movie lol)
         for (int a=0;a<2;a++) {
             uint8_t pawns = (a == 0) ? getFile(whitePawns, i) : getFile(blackPawns, i) ^ 56;
-            //Find msb (I have no idea why it starts at 3 but it works so yay :D)
-            int rank = 3;
+            //Find highest pawn (bitshift right means to get closer to a8, idk why, it just does)
+            int rank = 0;
             while (((pawns & 1) != 1) && (pawns != 0)) {
                 pawns = pawns >> 1;
                 rank += 1;
             }
             //No pawns in this rank to see guys, must've been the wind
             if (pawns == 0) {continue;}
-            uint64_t frontMask = (0xFFFFFFFFFFFFFFFF << (rank * 8)) & neighbouringBitmask & currentBitmask;
+            uint64_t frontMask = (0xFFFFFFFFFFFFFFFF << (rank * 8)) | neighbouringBitmask | currentBitmask;
             //If black then flip
             switch (a) {
                 case 0:
@@ -177,8 +200,10 @@ int evalPassedPawns(const Board& board) {
 }
 
 void evalPawns(Board &board) {
+    uint64_t whitePawns = board.pieces(PieceType::PAWN, Color::WHITE).getBits();
+    uint64_t blackPawns = board.pieces(PieceType::PAWN, Color::BLACK).getBits();
     //Passed pawn stuff
-    pawnCache = evalPassedPawns(board);
+    pawnCache = evalPassedPawns(board, whitePawns, blackPawns);
 
 }
 
@@ -308,7 +333,7 @@ int evalBoard(chess::Board& board) {
 
     double endgameWeight = phase * phase;
     
-
+    //Material imbalance is worse further into the endgame
     score += pMaterial * (1.0 + endgameWeight * 0.5);
 
     //PSQT stuff

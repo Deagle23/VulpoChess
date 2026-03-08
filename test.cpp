@@ -16,7 +16,7 @@ void foo() {
 int main() {
     foo();
 
-    Board board("8/6k1/8/8/8/P7/8/7K w - - 0 1");
+    Board board("8/8/2p2k2/8/2P5/5K2/8/8 w - - 0 1");
     evalPawns(board);
     std::cout << pawnCache << '\n'; 
 }
