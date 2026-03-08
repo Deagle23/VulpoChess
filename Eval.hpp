@@ -1,7 +1,10 @@
 #pragma once
+#include <cstdint>
+#include <sys/types.h>
 #define CHESS_NO_EXCEPTIONS
 #include "chess.hpp"
 #include <algorithm>
+#include <iostream>
 
 using namespace chess;
 
@@ -110,6 +113,74 @@ const int KING_ENDGAME_TABLE[64] = {
  -30,-30,  0,  0,  0,  0,-30,-30,
  -50,-30,-30,-30,-30,-30,-30,-50
 };
+
+//Pawn stuff
+int pawnCache = 0;
+const uint64_t fileBitmask = 0x0101010101010101;
+const int PASSED_PAWN_BONUS = 50;
+
+uint8_t getFile(uint64_t bb, int f) {
+    uint8_t file = 0;
+    for (int i=0;i<8;i++) {
+        file += (bb >> (f + 8 * i)) & 0x0000000000000001;
+    }
+    return file;
+}
+
+template<typename T>
+void print(T p, int missLines=1) {
+    std::cout << p;
+    for (int i=0;i<missLines;i++) {
+        std::cout << '\n';
+    }
+}
+
+int evalPassedPawns(const Board& board) {
+    //Loop through every file
+    int score = 0;
+    uint64_t whitePawns = board.pieces(PieceType::PAWN, Color::WHITE).getBits();
+    uint64_t blackPawns = board.pieces(PieceType::PAWN, Color::BLACK).getBits();
+    for (int i=0;i<8;i++) {
+        uint64_t currentBitmask = (fileBitmask << (7 - i));
+        uint64_t neighbouringBitmask = 0;
+        if (i > 0) {
+            neighbouringBitmask = neighbouringBitmask | (fileBitmask << (8 - i));
+        }
+        if (i < 7) {
+            neighbouringBitmask = neighbouringBitmask | (fileBitmask << (6 - i));
+        }
+        //Get if the pawns in this file are passed (i got sidetracked and watched an entire movie lol)
+        for (int a=0;a<2;a++) {
+            uint8_t pawns = (a == 0) ? getFile(whitePawns, i) : getFile(blackPawns, i) ^ 56;
+            //Find msb (I have no idea why it starts at 3 but it works so yay :D)
+            int rank = 3;
+            while (((pawns & 1) != 1) && (pawns != 0)) {
+                pawns = pawns >> 1;
+                rank += 1;
+            }
+            //No pawns in this rank to see guys, must've been the wind
+            if (pawns == 0) {continue;}
+            uint64_t frontMask = (0xFFFFFFFFFFFFFFFF << (rank * 8)) & neighbouringBitmask & currentBitmask;
+            //If black then flip
+            switch (a) {
+                case 0:
+                    score += ((frontMask & blackPawns) == 0) * PASSED_PAWN_BONUS;
+                    break;
+                case 1:
+                    score -= (((frontMask & whitePawns) ^ 56) == 0) * PASSED_PAWN_BONUS;
+                    break;
+            }
+        }
+
+    }
+    return score;
+}
+
+void evalPawns(Board &board) {
+    //Passed pawn stuff
+    pawnCache = evalPassedPawns(board);
+
+}
 
 int evalSquarePSQT(int sq, PieceType type, double egweight) {
 
@@ -252,6 +323,9 @@ int evalBoard(chess::Board& board) {
     int mobility = calculateMobility(board, Color::WHITE, endgameWeight) - calculateMobility(board, Color::BLACK, endgameWeight);
 
     score += mobility;
+
+    //Calculate pawn thingies
+    evalPawns(board);
 
     //Tempo stuff idk why this is like this in the CP wiki
     score += TEMPO_BONUS;

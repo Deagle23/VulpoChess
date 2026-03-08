@@ -101,12 +101,17 @@ int qSearch(Board& board, int alpha=-INF, int beta=INF) {
     }
     
     int score = -INF;
+    int currentPawnCache = pawnCache;
 
     for (auto move : captureMoves) {
         if (!board.isCapture(move)) {continue;}
         board.makeMove(move);
+        if (board.at(move.to()).type() == PieceType::PAWN) {
+            evalPawns(board);
+        }
         score = -qSearch(board, -beta, -alpha);
         board.unmakeMove(move);
+        pawnCache = currentPawnCache;
 
         if (score >= beta) {
             return beta;
@@ -167,6 +172,8 @@ int negamax(Board& board, int depth, int alpha=-INF, int beta=INF, int ply=1) {
         return -CONTEMPT;
     }
 
+    int currentPawnCache = pawnCache;
+
     for (int i=0;i<moves.size();i++) {
         int bestIndex = i;
         //Find the actual best index
@@ -181,8 +188,12 @@ int negamax(Board& board, int depth, int alpha=-INF, int beta=INF, int ply=1) {
         std::swap(scores[bestIndex], scores[i]);
 
         board.makeMove(moves[i]);
+        if (board.at(moves[i].to()).type() == PieceType::PAWN) {
+            evalPawns(board);
+        }
         int score = -negamax(board, depth - 1, -beta, -alpha, ply + 1);
         board.unmakeMove(moves[i]);
+        pawnCache = currentPawnCache;
 
 
         //Too good––opponent won't allow it, beta cutoff
