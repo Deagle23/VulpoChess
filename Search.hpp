@@ -132,7 +132,7 @@ int qSearch(Board& board, int alpha=-INF, int beta=INF) {
 
 int negamax(Board& board, int depth, int alpha=-INF, int beta=INF, int ply=1) {
 
-    if (depth == 0) {
+    if (depth <= 0) {
         return qSearch(board, alpha, beta);
     }
 
@@ -191,7 +191,14 @@ int negamax(Board& board, int depth, int alpha=-INF, int beta=INF, int ply=1) {
         if (board.at(moves[i].to()).type() == PieceType::PAWN) {
             evalPawns(board);
         }
-        int score = -negamax(board, depth - 1, -beta, -alpha, ply + 1);
+        //If it's a quiet move
+        int reduction = 0;
+        bool reduced = false;
+        if ((i > 4) && (ogAlpha == alpha) && depth > 2) {
+            reduction = (i / moves.size()) * 3;
+            reduced = true;
+        }
+        int score = -negamax(board, depth - 1 - reduction, -beta, -alpha, ply++);
         board.unmakeMove(moves[i]);
         pawnCache = currentPawnCache;
 
@@ -212,6 +219,27 @@ int negamax(Board& board, int depth, int alpha=-INF, int beta=INF, int ply=1) {
         if (score > alpha) {
             alpha = score;
             bestMove = moves[i];
+            if (reduced) {
+                //Search it at a greater depth than before
+                board.makeMove(moves[i]);
+                if (board.at(moves[i].to()).type() == PieceType::PAWN) {evalPawns(board);}
+                score = -negamax(board, depth - 1, -beta, -alpha, ply++);
+                board.unmakeMove(moves[i]);
+                pawnCache = currentPawnCache;
+                if (score >= beta) {
+                    if (!board.isCapture(moves[i])) {
+                        //Add to killer
+                        killers[ply][1] = killers[ply][0];
+                        killers[ply][0] = moves[i];
+                        //Add to history
+                        int bonus = depth * depth;
+                        updateHistory(board.sideToMove(), moves[i], bonus);
+                    }
+                    table.store(hash, depth, beta, LOWERBOUND, moves[i]);
+                    return beta;
+                }
+                if (score > alpha) {alpha = score; bestMove = moves[i];}
+            }
         }
     }
 
@@ -287,7 +315,9 @@ Move findBestMove(Board& board, int timeAllocated=10'000, bool printEval=false, 
         prevEval = bestScore;
     }
 
-    if (printEval) {std::cout << "\nEval: " << prevEval << "\nDepth: " << depth << "\n";}
+
+
+    if (printEval) {std::cout << "\nEval: " << prevEval * (1 - 2 * (board.sideToMove() == Color::BLACK)) << "\nDepth: " << depth << "\n";}
 
 
     return prevBestMove;

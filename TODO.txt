@@ -1,4 +1,5 @@
 Add:
 
-- Add Extensions and Reductions
-- Add isolated pawns, pawn chain evals, and stacked pawns
+- Add capture and promotion Extensions
+- Add some other reductions (already added LMR)
+- Add isolated pawns, pawn chain evals
