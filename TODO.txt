@@ -1,5 +1,6 @@
 Add:
 
 - Add capture and promotion Extensions
+- Add aspiration windows
 - Add some other reductions (already added LMR)
 - Add isolated pawns, pawn chain evals
