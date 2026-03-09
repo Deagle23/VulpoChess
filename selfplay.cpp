@@ -69,7 +69,7 @@ void writeGameToFolder(const std::string& folderName, const std::string& fileNam
 
 int main() {
 
-    Board board;
+    Board board("8/8/8/8/4k3/8/6K1/7R w - - 0 1");
 
     Movelist moves;
 

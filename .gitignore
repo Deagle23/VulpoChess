@@ -2,9 +2,10 @@
 
 .DS_Store
 
-games
-
-
-games/Chess game at 2026-03-01_17-42-40.txt
-
 .gitignore
+
+play
+
+selfplay
+
+test

@@ -267,48 +267,62 @@ Move findBestMove(Board& board, int timeAllocated=10'000, bool printEval=false, 
     Move prevBestMove;
     int prevEval = 0;
 
+    int aWindow, bWindow;
+    aWindow = bWindow = INF;
+
     while (!over) {
         bestScore = -INF;
+        int lb = prevEval - aWindow;
+        int ub = prevEval + bWindow;
 
         //Order moves
         int scores[256];
 
         (depth > 1) ? scoreMoves(board, moves, scores, true, 0, prevBestMove) : scoreMoves(board, moves, scores);
+        while (true) {
+            for (int i=0;i<moves.size();i++) {
+                int bestIndex = i;
+                int bestMoveScore = scores[i];
 
-        for (int i=0;i<moves.size();i++) {
-            int bestIndex = i;
-            int bestMoveScore = scores[i];
+                for (int j=i+1;j<moves.size();j++) {
+                    if (scores[j] > bestMoveScore) {
+                        bestMoveScore = scores[j];
+                        bestIndex = j;
+                    }
+                }
 
-            for (int j=i+1;j<moves.size();j++) {
-                if (scores[j] > bestMoveScore) {
-                    bestMoveScore = scores[j];
-                    bestIndex = j;
+                //Swap it to the front
+                std::swap(moves[bestIndex], moves[i]);
+                std::swap(scores[bestIndex], scores[i]);
+
+                Move move = moves[i];
+
+                board.makeMove(move);
+                int score = -negamax(board, depth - 1, -INF, INF, 1);
+                board.unmakeMove(move);
+
+                now = Clock::now();
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMove = move;
+                }
+
+                auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - start).count();
+
+                if (ms >= timeAllocated && depth > 1) {
+                    over = true;
+                    break;
                 }
             }
-
-            //Swap it to the front
-            std::swap(moves[bestIndex], moves[i]);
-            std::swap(scores[bestIndex], scores[i]);
-
-            Move move = moves[i];
-
-            board.makeMove(move);
-            int score = -negamax(board, depth - 1, -INF, INF, 1);
-            board.unmakeMove(move);
-
-            now = Clock::now();
-
-            if (score > bestScore) {
-                bestScore = score;
-                bestMove = move;
-            }
-
-            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - start).count();
-
-            if (ms >= timeAllocated && depth > 1) {
-                over = true;
-                break;
-            }
+            if (!(lb < bestScore && bestScore < ub)) {
+                if (bestScore <= lb) {aWindow *= 2;}
+                if (bestScore >= ub) {bWindow *= 2;}
+                lb = prevEval - aWindow;
+                ub = prevEval + bWindow;
+                continue;
+            } 
+            break;
         }
         depth += 1;
         prevBestMove = bestMove;
@@ -322,3 +336,4 @@ Move findBestMove(Board& board, int timeAllocated=10'000, bool printEval=false, 
 
     return prevBestMove;
 }
+
