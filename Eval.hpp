@@ -16,11 +16,11 @@ const int ROOK_VALUE = 500;
 const int QUEEN_VALUE = 900;
 
 const float PAWN_MB[2] {0.5, 1.2};
-const float KNIGHT_MB[2] {1.5, 2};
-const float BISHOP_MB[2] {1.3, 1.5};
+const float KNIGHT_MB[2] {2, 0.6};
+const float BISHOP_MB[2] {0.8, 1.5};
 const float ROOK_MB[2] {1.5, 2};
-const float QUEEN_MB[2] {1.2, 3};
-const float KING_MB[2] {-0.5, 2};
+const float QUEEN_MB[2] {0.6, 3};
+const float KING_MB[2] {-2, 1};
 
 constexpr int TEMPO_BONUS = 50;
 constexpr int CONTEMPT = 20;
@@ -216,6 +216,10 @@ int evalPassedPawns(const Board& board, uint64_t whitePawns, uint64_t blackPawns
     return score;
 }
 
+// int evalPawnStructure(const Board& board)
+// {
+//     for ()
+// }
 void evalPawns(Board &board) {
     uint64_t whitePawns = board.pieces(PieceType::PAWN, Color::WHITE).getBits();
     uint64_t blackPawns = board.pieces(PieceType::PAWN, Color::BLACK).getBits();
@@ -347,7 +351,7 @@ int evalBoard(chess::Board& board) {
     pMaterial += (board.pieces(PieceType::ROOK, Color::WHITE).count() - board.pieces(PieceType::ROOK, Color::BLACK).count()) * ROOK_VALUE;
     pMaterial += (board.pieces(PieceType::QUEEN, Color::WHITE).count() - board.pieces(PieceType::QUEEN, Color::BLACK).count()) * QUEEN_VALUE;
 
-    double phase = (8000.0 - countMaterial(board)) / 7000.0;
+    double phase = (8000.0 - countMaterial(board)) / 8500.0;
     phase = std::clamp(phase, 0.0, 1.0);
 
     double endgameWeight = phase * phase;
@@ -364,9 +368,9 @@ int evalBoard(chess::Board& board) {
     score += returnPSQT(board, PieceType::QUEEN, endgameWeight);
     score += returnPSQT(board, PieceType::KING, endgameWeight);
 
-    int mobility = calculateMobility(board, Color::WHITE, endgameWeight) - calculateMobility(board, Color::BLACK, endgameWeight);
+    //int mobility = calculateMobility(board, Color::WHITE, endgameWeight) - calculateMobility(board, Color::BLACK, endgameWeight);
 
-    score += mobility;
+    //score += mobility;
 
     //Calculate pawn thingies
     evalPawns(board);

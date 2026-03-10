@@ -9,3 +9,5 @@ play
 selfplay
 
 test
+
+compilerGen.cpp
