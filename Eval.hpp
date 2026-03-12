@@ -23,7 +23,7 @@ const float QUEEN_MB[2] {0.6, 3};
 const float KING_MB[2] {-2, 1};
 
 constexpr int TEMPO_BONUS = 50;
-constexpr int CONTEMPT = 20;
+constexpr int CONTEMPT = 50;
 
 constexpr int MATE_SCORE = 999999999;
 
