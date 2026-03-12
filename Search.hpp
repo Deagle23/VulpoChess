@@ -278,7 +278,11 @@ Move findBestMove(Board& board, int timeAllocated=10'000, bool printEval=false, 
         //Order moves
         int scores[256];
 
+        //Used for sort after
+        int evalScores[256];
+
         (depth > 1) ? scoreMoves(board, moves, scores, true, 0, prevBestMove) : scoreMoves(board, moves, scores);
+
         while (true) {
             for (int i=0;i<moves.size();i++) {
                 int bestIndex = i;
@@ -327,6 +331,7 @@ Move findBestMove(Board& board, int timeAllocated=10'000, bool printEval=false, 
         depth += 1;
         prevBestMove = bestMove;
         prevEval = bestScore;
+        aWindow = bWindow = 25;
     }
 
 
