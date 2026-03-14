@@ -216,10 +216,11 @@ int evalPassedPawns(const Board& board, uint64_t whitePawns, uint64_t blackPawns
     return score;
 }
 
-// int evalPawnStructure(const Board& board)
-// {
-//     for ()
-// }
+int evalPawnStructure(const Board& board)
+{
+    return 0;
+}
+
 void evalPawns(Board &board) {
     uint64_t whitePawns = board.pieces(PieceType::PAWN, Color::WHITE).getBits();
     uint64_t blackPawns = board.pieces(PieceType::PAWN, Color::BLACK).getBits();
